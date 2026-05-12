@@ -156,3 +156,17 @@ DATA_RETENTION_DAYS = 365
 # ── AI ────────────────────────────────────────────────────────
 CLAUDE_API_KEY = os.environ.get('CLAUDE_API_KEY', '')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+
+# ── Proxy / Render settings ───────────────────────────────────
+# Trust the reverse proxy headers
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Session cookie settings for production
+SESSION_COOKIE_SECURE = False   # Keep False — proxy handles HTTPS
+CSRF_COOKIE_SECURE = False      # Keep False — proxy handles HTTPS
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Admin login URL
+LOGIN_URL = '/admin/login/'
