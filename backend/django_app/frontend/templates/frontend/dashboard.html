@@ -557,7 +557,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg0);color:var(--txt);displ
 <script>
 const FASTAPI = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://127.0.0.1:8001'
-  : 'https://mauriguide-fastapi.onrender.com';
+  : '';
 const CC={beach:'#00e5ff',food:'#ff9800',site:'#bb86fc',water:'#29b6f6',land:'#66bb6a',hike:'#ef5350'};
 const CE={beach:'🏖️',food:'🍽️',site:'🏛️',water:'🤿',land:'🏍️',hike:'⛰️'};
 const CL={beach:'Beach',food:'Food & Drink',site:'Cultural Site',water:'Water Activity',land:'Land Activity',hike:'Hiking Trail'};
@@ -1241,7 +1241,7 @@ function newChat() {
   sessionStorage.removeItem('mg_sess');
   var chatBody = document.getElementById('chatBody');
   chatBody.innerHTML = '';
-  appendMsg("Hello, "+uname+"! 🌴 I'm your MauriGuide AI. Ask me anything about Mauritius!", 'bot', []);
+  appendMsg("Kia Ora, "+uname+"! 🌴 I'm your MauriGuide AI. Ask me anything about Mauritius!", 'bot', []);
   renderChList();
   document.getElementById('ci').focus();
 }
@@ -1316,7 +1316,7 @@ window.addEventListener('DOMContentLoaded',function(){
   var hm=document.getElementById('heroMsg');
   if(hm)hm.textContent=getGreeting()+', '+uname+' \uD83D\uDC4B';
   var cw=document.getElementById('chatWelcome');
-  if(cw)cw.textContent='Hello, '+uname+'! 🌴 I\'m your MauriGuide AI. Ask me anything about Mauritius!';
+  if(cw)cw.textContent='Kia Ora, '+uname+'! \uD83C\uDF34 I\'m your MauriGuide AI. Ask me anything about Mauritius!';
   // Clear search
   var ds=document.getElementById('discSearch');if(ds)ds.value='';
   // Load places and render discover
