@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — MauriGuide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:#000;position:relative}
+.slide{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.6s ease-in-out;z-index:0}
+.slide.active{opacity:1;animation:kb 14s ease-in-out forwards}
+@keyframes kb{0%{transform:scale(1)}100%{transform:scale(1.09) translateX(-1%) translateY(-1%)}}
+@keyframes kb2{0%{transform:scale(1.07) translateX(1%)}100%{transform:scale(1) translateX(-1%) translateY(1%)}}
+@keyframes kb3{0%{transform:scale(1) translateX(-1%) translateY(1%)}100%{transform:scale(1.08) translateX(1%)}}
+.overlay{position:fixed;inset:0;z-index:1;background:linear-gradient(135deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,.3) 50%,rgba(0,0,0,.55) 100%)}
+.ui{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+
+.back{position:fixed;top:22px;left:28px;display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:500;transition:color .2s;z-index:10}
+.back:hover{color:white}
+
+.card{background:rgba(255,255,255,.07);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:24px;width:100%;max-width:400px;padding:36px 40px;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+
+.card-hdr{text-align:center;margin-bottom:28px}
+.card-icon{width:52px;height:52px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.card-title{font-size:1.4rem;font-weight:800;color:white;margin-bottom:5px;letter-spacing:-.3px}
+.card-sub{font-size:13px;color:rgba(255,255,255,.55)}
+
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.fg input{width:100%;padding:11px 13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;font-size:13px;color:white;font-family:inherit;outline:none;transition:border .15s}
+.fg input:focus{border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.12)}
+.fg input::placeholder{color:rgba(255,255,255,.3)}
+
+.submit-btn{width:100%;padding:13px;background:white;color:#0f172a;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:6px}
+.submit-btn:hover{background:rgba(255,255,255,.92);transform:translateY(-1px)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.alert{padding:10px 13px;border-radius:9px;margin-bottom:16px;font-size:12px;font-weight:500}
+.alert-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.alert-success{background:rgba(16,216,122,.12);border:1px solid rgba(16,216,122,.25);color:#6ee7b7}
+
+.footer-row{text-align:center;margin-top:18px;font-size:12px;color:rgba(255,255,255,.45)}
+.footer-row a{color:rgba(255,255,255,.75);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.25)}
+.footer-row a:hover{color:white;border-color:rgba(255,255,255,.6)}
+
+/* Dots */
+.dots{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:3}
+.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);border:none;padding:0;cursor:pointer;transition:all .3s}
+.dot.on{background:white;width:20px;border-radius:3px}
+
+@media(max-width:480px){
+  .card{padding:26px 22px}
+  .back{top:14px;left:14px}
+}
+</style>
+</head>
+<body data-imgs="{% static 'frontend/images/' %}">
+
+<!-- Slides -->
+<div class="slide" id="s0"></div>
+<div class="slide" id="s1"></div>
+<div class="slide" id="s2"></div>
+<div class="slide" id="s3"></div>
+<div class="slide" id="s4"></div>
+<div class="slide" id="s5"></div>
+<div class="slide" id="s6"></div>
+<div class="slide" id="s7"></div>
+<div class="slide" id="s8"></div>
+<div class="slide" id="s9"></div>
+<div class="slide" id="s10"></div>
+
+<div class="overlay"></div>
+
+<a href="/" class="back">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  Back
+</a>
+
+<div class="ui">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-icon">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <circle cx="13" cy="10" r="4" stroke="white" stroke-width="1.5" fill="none" opacity="0.9"/>
+          <path d="M5 22c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="card-title">Welcome back</div>
+      <div class="card-sub">Sign in to MauriGuide</div>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <form onsubmit="return false;">
+      <div class="fg">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Enter your username" required autofocus>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter your password" required>
+      </div>
+      <button type="button" class="submit-btn" id="loginBtn" onclick="doLogin()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sign In
+      </button>
+    </form>
+
+    <p class="footer-row">Don't have an account? <a href="/">Register here</a></p>
+  </div>
+</div>
+
+<div class="dots" id="dots"></div>
+
+<script>
+// All images including extra ones
+var BASE = document.body.getAttribute('data-imgs');
+var IMGS = [
+  'home1.jpg','home2.jpg','home3.jpg','home4.jpg','home5.jpg',
+  'home6.jpg','home7.jpg','home8.jpg','home9.jpg',
+  'local_bg.jpg','register_bg.jpg'
+];
+var KBS = ['kb','kb2','kb3'];
+var total = IMGS.length, cur = 0, slideTimer;
+
+// Shuffle array for random order
+for(var i=IMGS.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=IMGS[i];IMGS[i]=IMGS[j];IMGS[j]=tmp;}
+
+// Set bg images
+for(var i=0;i<IMGS.length;i++){
+  document.getElementById('s'+i).style.backgroundImage="url('"+BASE+IMGS[i]+"')";
+}
+
+// Build dots
+var dotsEl=document.getElementById('dots');
+dotsEl.innerHTML=IMGS.map(function(_,i){return'<button class="dot'+(i===0?' on':'')+'" onclick="goSlide('+i+')"></button>';}).join('');
+
+function goSlide(idx){
+  clearTimeout(slideTimer);
+  document.getElementById('s'+cur).classList.remove('active');
+  cur=idx;
+  var sl=document.getElementById('s'+cur);
+  sl.style.animation='none';sl.offsetHeight;
+  sl.style.animationName=KBS[cur%KBS.length];
+  sl.classList.add('active');
+  document.querySelectorAll('.dot').forEach(function(d,i){d.classList.toggle('on',i===cur);});
+  slideTimer=setTimeout(function(){goSlide((cur+1)%total);},9000);
+}
+goSlide(0);
+
+// Login logic
+function getCookie(name){
+  for(var c of document.cookie.split(';')){var t=c.trim();if(t.startsWith(name+'='))return decodeURIComponent(t.slice(name.length+1));}
+  return null;
+}
+
+async function doLogin(){
+  var username=document.getElementById('username').value.trim();
+  var password=document.getElementById('password').value;
+  var alertBox=document.getElementById('alertBox');
+  var btn=document.getElementById('loginBtn');
+  if(!username||!password){alertBox.innerHTML="<div class='alert alert-error'>Please enter your username and password.</div>";return;}
+  btn.disabled=true;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="6 10" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 7 7" to="360 7 7" dur="0.7s" repeatCount="indefinite"/></circle></svg> Signing in...';
+  alertBox.innerHTML='';
+  try{
+    var res=await fetch('/api/accounts/login/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},credentials:'same-origin',body:JSON.stringify({username:username,password:password})});
+    var result=await res.json();
+    if(res.ok){
+      alertBox.innerHTML="<div class='alert alert-success'>✓ Login successful! Redirecting...</div>";
+      localStorage.setItem('access_token',result.tokens.access);
+      localStorage.setItem('refresh_token',result.tokens.refresh);
+      localStorage.setItem('user',JSON.stringify(result.user));
+      setTimeout(function(){window.location.href='/dashboard/';},1000);
+    } else {
+      var msg=result.error||result.detail||'Invalid credentials. Please try again.';
+      alertBox.innerHTML="<div class='alert alert-error'>"+msg+"</div>";
+      btn.disabled=false;
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Sign In';
+    }
+  }catch(err){
+    alertBox.innerHTML="<div class='alert alert-error'>Connection error. Is the server running?</div>";
+    btn.disabled=false;
+    btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Sign In';
+  }
+}
+
+document.addEventListener('keypress',function(e){if(e.key==='Enter')doLogin();});
+</script>
+</body>
+</html>

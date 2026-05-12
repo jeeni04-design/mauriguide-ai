@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Planner - MauriGuide</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+[data-theme="dark"]{--bg0:#0a0a0f;--bg1:#111118;--bg2:#18181f;--bg3:#1e1e28;--bdr:#2a2a38;--bdr2:#333345;--txt:#f0f0f8;--txt2:#9090b0;--txt3:#55556a;--inp:#18181f}
+[data-theme="light"]{--bg0:#f1f5f9;--bg1:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;--bdr:#e2e8f0;--bdr2:#cbd5e1;--txt:#0f172a;--txt2:#475569;--txt3:#94a3b8;--inp:#f8fafc}
+:root{--acc:#7c6dfa;--acc-g:linear-gradient(135deg,#7c6dfa,#a855f7);--grn:#10d87a;--amb:#f5a623;--red:#ef4444;--r:12px;--r-sm:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg0);color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased}
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* Left form panel */
+.left{width:400px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.phdr{padding:16px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.back-btn{width:30px;height:30px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--txt2);font-size:12px;text-decoration:none;transition:all .15s;flex-shrink:0}
+.back-btn:hover{background:var(--bg3);color:var(--txt)}
+.phdr-t{font-size:13px;font-weight:700;color:var(--txt)}
+.phdr-s{font-size:11px;color:var(--txt3)}
+.form-scroll{flex:1;overflow-y:auto;padding:16px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:10px;font-weight:700;color:var(--txt3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.fld input,.fld select{width:100%;padding:9px 11px;background:var(--inp);border:1.5px solid var(--bdr);border-radius:var(--r-sm);font-size:13px;color:var(--txt);font-family:inherit;outline:none;transition:border .15s}
+.fld input:focus,.fld select:focus{border-color:rgba(124,109,250,.5)}
+.fld select option{background:var(--bg2);color:var(--txt)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.picker-inner{position:relative}
+.picker-dd{position:absolute;top:100%;left:0;right:0;background:var(--bg1);border:1.5px solid var(--acc);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);max-height:180px;overflow-y:auto;z-index:500;display:none;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.picker-dd.open{display:block}
+.dd-opt{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr)}
+.dd-opt:hover{background:var(--bg3)}
+.dd-opt:last-child{border-bottom:none}
+.dd-d{font-size:10px;color:var(--txt3)}
+.int-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.int-chip{padding:5px 11px;border-radius:20px;border:1.5px solid var(--bdr);background:var(--bg2);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;transition:all .15s;user-select:none}
+.int-chip.on{background:rgba(124,109,250,.12);border-color:rgba(124,109,250,.4);color:var(--acc)}
+.gen-btn{width:100%;padding:12px;background:var(--acc-g);color:white;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:4px;box-shadow:0 0 20px rgba(124,109,250,.25)}
+.gen-btn:hover{opacity:.9}
+.gen-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Right result panel */
+.right{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.phase{display:none;flex:1;flex-direction:column;overflow:hidden}
+.phase.active{display:flex}
+
+/* Empty */
+.empty-c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);padding:40px;text-align:center}
+.empty-c .ei{font-size:52px;opacity:.35}
+
+/* Generating */
+.gen-c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center}
+.gen-spin{width:56px;height:56px;border-radius:50%;background:var(--acc-g);display:flex;align-items:center;justify-content:center;font-size:24px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.gen-log{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;width:100%;max-width:360px;max-height:150px;overflow-y:auto;font-size:12px;color:var(--txt2);line-height:1.7}
+.log-line{display:flex;align-items:center;gap:6px}
+.log-line.ok{color:var(--grn)}.log-line.wait{color:var(--amb)}
+
+/* Results */
+.res-hdr{padding:13px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.res-title{font-size:14px;font-weight:700;color:var(--txt)}
+.res-sub{font-size:11px;color:var(--txt3);margin-top:2px}
+.save-btn{background:var(--acc-g);color:white;border:none;padding:9px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.save-btn:hover{opacity:.88}
+.save-btn:disabled{opacity:.45;cursor:not-allowed}
+.res-body{flex:1;overflow:hidden;display:flex}
+
+/* Day-by-day list */
+.itin-list{width:290px;flex-shrink:0;border-right:1px solid var(--bdr);overflow-y:auto}
+.day-hdr{padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--bdr);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between}
+.stop-item{display:flex;align-items:flex-start;gap:9px;padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .12s}
+.stop-item:hover{background:var(--bg2)}
+.stop-item.hl{background:rgba(124,109,250,.08);border-left:3px solid var(--acc)}
+.stop-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px}
+.stop-info{flex:1;min-width:0}
+.stop-name{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stop-meta{font-size:10px;color:var(--txt3);display:flex;gap:7px}
+.stop-reason{font-size:10px;color:var(--txt3);font-style:italic;margin-top:3px;line-height:1.4}
+.stop-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;margin-top:3px}
+.stop-rm{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;flex-shrink:0;padding:2px;transition:color .12s}
+.stop-rm:hover{color:var(--red)}
+
+/* Map */
+.map-area{flex:1;position:relative}
+#plan-map{width:100%;height:100%}
+.map-leg{position:absolute;bottom:10px;left:10px;background:rgba(17,17,24,.92);border:1px solid var(--bdr);border-radius:var(--r-sm);padding:10px 12px;font-size:11px;z-index:500;backdrop-filter:blur(4px)}
+.ml-r{display:flex;align-items:center;gap:6px;margin-bottom:3px;color:var(--txt2)}
+.ml-r:last-child{margin-bottom:0}
+.ml-d{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+/* Success */
+.succ-c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;text-align:center}
+.succ-ic{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--grn),#059669);display:flex;align-items:center;justify-content:center;font-size:26px;color:white}
+.succ-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.sbtn-pri{background:var(--acc-g);color:white;border:none;padding:10px 20px;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.sbtn-sec{background:var(--bg2);color:var(--txt2);border:1px solid var(--bdr);padding:10px 20px;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+
+@media(max-width:768px){
+  .shell{flex-direction:column}
+  .left{width:100%;max-height:50vh}
+  .res-body{flex-direction:column}
+  .itin-list{width:100%;max-height:220px;border-right:none;border-bottom:1px solid var(--bdr)}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- FORM -->
+<div class="left">
+  <div class="phdr">
+    <a class="back-btn" href="/dashboard/"><i class="fa-solid fa-arrow-left"></i></a>
+    <div>
+      <div class="phdr-t"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--acc);margin-right:5px"></i>Trip Planner</div>
+      <div class="phdr-s">AI-powered Mauritius itinerary</div>
+    </div>
+  </div>
+  <div class="form-scroll">
+    <div class="fld"><label>Trip title *</label><input id="f-title" type="text" placeholder="e.g. Summer Vacation 2024"></div>
+    <div class="frow">
+      <div class="fld"><label>Starting town *</label>
+        <div class="picker-inner">
+          <input id="f-start" type="text" placeholder="Search..." autocomplete="off" style="width:100%;padding:9px 11px;background:var(--inp);border:1.5px solid var(--bdr);border-radius:var(--r-sm);font-size:13px;color:var(--txt);font-family:inherit;outline:none">
+          <div class="picker-dd" id="dd-start"></div>
+        </div>
+      </div>
+      <div class="fld"><label>Destination *</label>
+        <div class="picker-inner">
+          <input id="f-end" type="text" placeholder="Search..." autocomplete="off" style="width:100%;padding:9px 11px;background:var(--inp);border:1.5px solid var(--bdr);border-radius:var(--r-sm);font-size:13px;color:var(--txt);font-family:inherit;outline:none">
+          <div class="picker-dd" id="dd-end"></div>
+        </div>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fld"><label>Start date</label><input id="f-sd" type="date"></div>
+      <div class="fld"><label>End date</label><input id="f-ed" type="date"></div>
+    </div>
+    <div class="frow">
+      <div class="fld"><label>Budget</label>
+        <select id="f-budget">
+          <option value="budget">Budget</option>
+          <option value="moderate" selected>Moderate</option>
+          <option value="luxury">Luxury</option>
+        </select>
+      </div>
+      <div class="fld"><label>Travelling with</label>
+        <select id="f-group">
+          <option value="solo">Solo</option>
+          <option value="couple" selected>Couple</option>
+          <option value="family">Family</option>
+          <option value="friends">Friends</option>
+        </select>
+      </div>
+    </div>
+    <div class="fld"><label>Interests</label>
+      <div class="int-wrap">
+        <div class="int-chip on" data-cat="beach">🏖️ Beaches</div>
+        <div class="int-chip on" data-cat="food">🍽️ Food</div>
+        <div class="int-chip on" data-cat="site">🏛️ Culture</div>
+        <div class="int-chip" data-cat="water">🤿 Water</div>
+        <div class="int-chip" data-cat="land">🏍️ Land</div>
+        <div class="int-chip" data-cat="hike">⛰️ Hiking</div>
+      </div>
+    </div>
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> Generate AI-Powered Itinerary
+    </button>
+  </div>
+</div>
+
+<!-- RIGHT -->
+<div class="right">
+
+  <div class="phase active" id="ph-empty">
+    <div class="phdr" style="border-bottom:1px solid var(--bdr)">
+      <div style="font-size:12px;color:var(--txt3)">Your itinerary will appear here</div>
+    </div>
+    <div class="empty-c">
+      <div class="ei">🗺️</div>
+      <div style="font-size:16px;font-weight:700;color:var(--txt2)">Ready to plan your trip</div>
+      <div style="font-size:13px;max-width:280px;line-height:1.6">Fill in your details and click <b style="color:var(--acc)">Generate</b> — AI will build a day-by-day itinerary using real places from Mauritius.</div>
+    </div>
+  </div>
+
+  <div class="phase" id="ph-gen">
+    <div class="phdr"><div class="phdr-t">Building your itinerary...</div></div>
+    <div class="gen-c">
+      <div class="gen-spin">🤖</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--txt);margin-bottom:5px">AI is planning your trip</div>
+        <div style="font-size:13px;color:var(--txt2)">Picking the best places along your route</div>
+      </div>
+      <div class="gen-log" id="genLog"></div>
+    </div>
+  </div>
+
+  <div class="phase" id="ph-results">
+    <div class="res-hdr">
+      <div>
+        <div class="res-title" id="resTitle">Your Itinerary</div>
+        <div class="res-sub" id="resSub"></div>
+      </div>
+      <button class="save-btn" id="saveBtn" onclick="saveTrip()">
+        <i class="fa-solid fa-floppy-disk"></i> Save This Trip
+      </button>
+    </div>
+    <div class="res-body">
+      <div class="itin-list" id="itinList"></div>
+      <div class="map-area">
+        <div id="plan-map"></div>
+        <div class="map-leg" id="mapLeg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase" id="ph-saved">
+    <div class="succ-c">
+      <div class="succ-ic">✓</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--txt);margin-bottom:5px">Trip saved!</div>
+        <div style="font-size:13px;color:var(--txt2)">Your itinerary is ready to view in My Trips.</div>
+      </div>
+      <div class="succ-btns">
+        <a href="/dashboard/#itinerary" class="sbtn-pri"><i class="fa-solid fa-route"></i> View My Trips</a>
+        <button class="sbtn-sec" onclick="resetForm()">Plan Another Trip</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const FASTAPI='http://127.0.0.1:8001';
+const token=localStorage.getItem('access_token');
+if(!token)window.location.href='/login/';
+document.documentElement.setAttribute('data-theme',localStorage.getItem('mg_theme')==='light'?'light':'dark');
+function getCk(n){for(const c of document.cookie.split(';')){const t=c.trim();if(t.startsWith(n+'='))return decodeURIComponent(t.slice(n.length+1));}return null;}
+function ah(){return{'Content-Type':'application/json','Authorization':'Bearer '+token,'X-CSRFToken':getCk('csrftoken')};}
+
+const CC={beach:'#00e5ff',food:'#ff9800',site:'#bb86fc',water:'#29b6f6',land:'#66bb6a',hike:'#ef5350'};
+const CE={beach:'🏖️',food:'🍽️',site:'🏛️',water:'🤿',land:'🏍️',hike:'⛰️'};
+const CL={beach:'Beach',food:'Food & Drink',site:'Cultural Site',water:'Water Activity',land:'Land Activity',hike:'Hiking Trail'};
+
+const TOWNS=[
+  {n:'Port Louis',d:'Port Louis',lat:-20.1667,lng:57.4833},
+  {n:'Pailles',d:'Port Louis',lat:-20.2000,lng:57.5167},
+  {n:'Grand Baie',d:'Rivière du Rempart',lat:-20.0167,lng:57.5833},
+  {n:'Cap Malheureux',d:'Rivière du Rempart',lat:-19.9833,lng:57.6167},
+  {n:'Goodlands',d:'Rivière du Rempart',lat:-20.0500,lng:57.6667},
+  {n:'Rivière du Rempart',d:'Rivière du Rempart',lat:-20.1167,lng:57.7167},
+  {n:'Roches Noires',d:'Rivière du Rempart',lat:-20.0833,lng:57.7500},
+  {n:'Triolet',d:'Pamplemousses',lat:-20.0500,lng:57.5500},
+  {n:'Pamplemousses',d:'Pamplemousses',lat:-20.1000,lng:57.5667},
+  {n:'Terre Rouge',d:'Pamplemousses',lat:-20.1500,lng:57.5333},
+  {n:'Pointe aux Piments',d:'Pamplemousses',lat:-20.0667,lng:57.5167},
+  {n:'Trou d\'Eau Douce',d:'Flacq',lat:-20.2000,lng:57.8000},
+  {n:'Centre de Flacq',d:'Flacq',lat:-20.1833,lng:57.7167},
+  {n:'Quatre Cocos',d:'Flacq',lat:-20.1500,lng:57.8000},
+  {n:'Moka',d:'Moka',lat:-20.2333,lng:57.5667},
+  {n:'Quartier Militaire',d:'Moka',lat:-20.2667,lng:57.6000},
+  {n:'Saint Pierre',d:'Moka',lat:-20.3000,lng:57.5667},
+  {n:'Beau Bassin',d:'Plaines Wilhems',lat:-20.2333,lng:57.4833},
+  {n:'Rose Hill',d:'Plaines Wilhems',lat:-20.2333,lng:57.4667},
+  {n:'Quatre Bornes',d:'Plaines Wilhems',lat:-20.2667,lng:57.4833},
+  {n:'Curepipe',d:'Plaines Wilhems',lat:-20.3167,lng:57.5167},
+  {n:'Mahebourg',d:'Grand Port',lat:-20.4000,lng:57.7000},
+  {n:'Rose Belle',d:'Grand Port',lat:-20.3833,lng:57.6500},
+  {n:'Vieux Grand Port',d:'Grand Port',lat:-20.4333,lng:57.7167},
+  {n:'Souillac',d:'Savanne',lat:-20.5167,lng:57.5167},
+  {n:'Baie du Cap',d:'Savanne',lat:-20.4833,lng:57.3833},
+  {n:'Bel Ombre',d:'Savanne',lat:-20.5000,lng:57.4000},
+  {n:'Flic en Flac',d:'Black River',lat:-20.2833,lng:57.3667},
+  {n:'Tamarin',d:'Black River',lat:-20.3333,lng:57.3833},
+  {n:'Black River',d:'Black River',lat:-20.3667,lng:57.3667},
+  {n:'Le Morne',d:'Black River',lat:-20.4500,lng:57.3500},
+  {n:'Chamarel',d:'Black River',lat:-20.4333,lng:57.3833},
+  {n:'Albion',d:'Black River',lat:-20.2000,lng:57.4167},
+];
+
+var startTown=null,endTown=null;
+function setupPicker(inpId,ddId,which){
+  var inp=document.getElementById(inpId),dd=document.getElementById(ddId);
+  inp.addEventListener('focus',function(){renderDD(dd,filterT(inp.value));dd.classList.add('open');});
+  inp.addEventListener('input',function(){renderDD(dd,filterT(inp.value));dd.classList.add('open');});
+  inp.addEventListener('blur',function(){setTimeout(function(){dd.classList.remove('open');},160);});
+  dd.addEventListener('mousedown',function(e){
+    var o=e.target.closest('.dd-opt');if(!o)return;e.preventDefault();
+    var t=TOWNS[parseInt(o.dataset.i)];
+    if(which==='start')startTown=t;else endTown=t;
+    inp.value=t.n;dd.classList.remove('open');
+  });
+}
+function filterT(q){var ql=(q||'').toLowerCase();return ql?TOWNS.filter(function(t){return t.n.toLowerCase().indexOf(ql)>-1||t.d.toLowerCase().indexOf(ql)>-1;}):TOWNS;}
+function renderDD(dd,list){dd.innerHTML=list.slice(0,40).map(function(t){var i=TOWNS.indexOf(t);return'<div class="dd-opt" data-i="'+i+'"><span>'+t.n+'</span><span class="dd-d">'+t.d+'</span></div>';}).join('')||'<div style="padding:9px 12px;font-size:12px;color:var(--txt3)">No results</div>';}
+setupPicker('f-start','dd-start','start');
+setupPicker('f-end','dd-end','end');
+
+document.querySelectorAll('.int-chip').forEach(function(c){c.onclick=function(){c.classList.toggle('on');};});
+
+function getInts(){var r=[];document.querySelectorAll('.int-chip.on').forEach(function(c){r.push(c.dataset.cat);});return r.length?r:['beach','food','site'];}
+function getDays(){var sd=document.getElementById('f-sd').value,ed=document.getElementById('f-ed').value;if(sd&&ed){var d=Math.round((new Date(ed)-new Date(sd))/(864e5))+1;return Math.max(1,d);}return 3;}
+
+function showPhase(id){document.querySelectorAll('.phase').forEach(function(p){p.classList.remove('active');});document.getElementById('ph-'+id).classList.add('active');}
+function log(msg,t){var l=document.getElementById('genLog');var d=document.createElement('div');d.className='log-line '+(t||'wait');d.innerHTML=(t==='ok'?'<i class="fa-solid fa-check" style="color:var(--grn)"></i>':'<i class="fa-solid fa-circle-notch fa-spin" style="color:var(--amb)"></i>')+' '+msg;l.appendChild(d);l.scrollTop=l.scrollHeight;}
+
+var allPlaces=[],genStops=[];
+
+async function generate(){
+  var title=document.getElementById('f-title').value.trim();
+  var startIn=document.getElementById('f-start').value.trim();
+  var endIn=document.getElementById('f-end').value.trim();
+  if(!title){alert('Please enter a trip title.');return;}
+  if(!startTown&&!startIn){alert('Please select a starting town.');return;}
+  if(!endTown&&!endIn){alert('Please select a destination.');return;}
+
+  var days=getDays();
+  var ints=getInts();
+  var budget=document.getElementById('f-budget').value;
+  var group=document.getElementById('f-group').value;
+  var startName=startTown?startTown.n:startIn;
+  var endName=endTown?endTown.n:endIn;
+  var startLatLng=startTown?[startTown.lat,startTown.lng]:null;
+  var endLatLng=endTown?[endTown.lat,endTown.lng]:null;
+
+  showPhase('gen');
+  document.getElementById('genLog').innerHTML='';
+  document.getElementById('genBtn').disabled=true;
+  log('Loading places from database...');
+
+  // Load places
+  if(!allPlaces.length){
+    try{var r=await fetch('/api/places/');var d=await r.json();allPlaces=d.places||[];}catch(e){allPlaces=[];}
+  }
+  log('Loaded '+allPlaces.length+' places','ok');
+
+  // Filter by interests
+  var pool=allPlaces.filter(function(p){return ints.indexOf(p.category)>-1;});
+  log('Filtered '+pool.length+' relevant places','ok');
+  log('Asking AI to build your '+days+'-day itinerary...');
+
+  // Build prompt
+  var intLabels={beach:'beaches and coastal spots',food:'local restaurants and food markets',site:'cultural sites and heritage',water:'water sports and activities',land:'land adventures and activities',hike:'hiking trails and nature walks'};
+  var intText=ints.map(function(i){return intLabels[i]||i;}).join(', ');
+  var placeList=pool.slice(0,50).map(function(p){return p.name+' ['+p.category+', '+p.location+']';}).join('; ');
+  var sd=document.getElementById('f-sd').value,ed=document.getElementById('f-ed').value;
+  var dateRange=sd&&ed?'from '+sd+' to '+ed:'for '+days+' days';
+
+  var prompt='You are a Mauritius travel expert. Create a detailed '+days+'-day trip itinerary '+dateRange
+    +' for a '+group+' travelling from '+startName+' to '+endName+'.'
+    +' Budget level: '+budget+'. Preferred activities: '+intText+'.'
+    +'\n\nIMPORTANT RULES:'
+    +'\n- Day 1 MUST start in or near '+startName+' with places close to the starting point'
+    +'\n- The FINAL day MUST end in or near '+endName+' with places near the destination'
+    +'\n- In between, progressively move from start to end geographically'
+    +'\n- Choose '+Math.min(Math.ceil(days*2.5),15)+' total stops, spread across the '+days+' days'
+    +'\n- Only use places from this list: '+placeList
+    +'\n\nFormat each stop EXACTLY as:'
+    +'\nDAY [number] | [exact place name from list] | [category] | [hours] | [one sentence reason]'
+    +'\nDo not add any other text, just the formatted stops.';
+
+  try{
+    var h={'Content-Type':'application/json'};
+    if(token)h['Authorization']='Bearer '+token;
+    var resp=await fetch(FASTAPI+'/api/chat/send',{method:'POST',headers:h,body:JSON.stringify({message:prompt,session_id:'plan-'+Date.now()})});
+    if(!resp.ok)throw new Error('AI service error '+resp.status);
+    var data=await resp.json();
+    log('AI response received','ok');
+    log('Parsing itinerary...');
+
+    var stops=parseStops(data.message,pool,days,startName,endName,startLatLng,endLatLng);
+    log('Built '+stops.length+' stops across '+days+' day'+(days>1?'s':''),'ok');
+
+    genStops=stops;
+    renderResults(title,startName,endName,days,stops);
+    setTimeout(function(){showPhase('results');},500);
+
+  }catch(e){
+    log('AI unavailable — using smart recommendations','wait');
+    var stops=smartFallback(pool,days,startName,endName,startLatLng,endLatLng,ints);
+    log('Generated '+stops.length+' recommended stops','ok');
+    genStops=stops;
+    renderResults(title,startName,endName,days,stops);
+    setTimeout(function(){showPhase('results');},500);
+  }
+}
+
+function parseStops(text,pool,days,startName,endName,startLL,endLL){
+  var stops=[];
+  var lines=text.split('\n');
+  lines.forEach(function(line){
+    line=line.trim();
+    var m=line.match(/DAY\s*(\d+)\s*\|\s*(.+?)\s*\|\s*(\w+)\s*\|\s*([\d.]+)\s*\|\s*(.+)/i);
+    if(!m)return;
+    var dayN=parseInt(m[1]),pname=m[2].trim(),hours=parseFloat(m[4])||2,reason=m[5].trim();
+    // Match to DB place
+    var p=pool.find(function(x){return x.name.toLowerCase()===pname.toLowerCase();});
+    if(!p)p=pool.find(function(x){return x.name.toLowerCase().indexOf(pname.toLowerCase())>-1||pname.toLowerCase().indexOf(x.name.toLowerCase())>-1;});
+    if(p&&!stops.find(function(s){return s.item_name===p.name;})){
+      stops.push({day:dayN,item_name:p.name,category:p.category,location:p.location,lat:p.latitude,lng:p.longitude,hours:hours,reason:reason,image_url:p.image_url});
+    }
+  });
+  if(stops.length<3)stops=smartFallback(pool,days,startName,endName,startLL,endLL,[]);
+  return stops;
+}
+
+function smartFallback(pool,days,startName,endName,startLL,endLL,ints){
+  // Sort pool by distance from start to end geographically
+  var stops=[];
+  var used=new Set();
+  var totalStops=Math.min(Math.ceil(days*2.5),15);
+  var stopsPerDay=Math.ceil(totalStops/days);
+
+  // Shuffle pool for variety
+  var shuffled=pool.slice().sort(function(){return Math.random()-.5;});
+
+  // Split into days
+  for(var day=1;day<=days;day++){
+    var dayStops=0;
+    // On first day, prefer places near start; last day near end
+    var dayPool=shuffled.filter(function(p){return !used.has(p.name);});
+    if(day===1&&startLL){
+      dayPool=dayPool.sort(function(a,b){
+        return dist(a.latitude,a.longitude,startLL[0],startLL[1])-dist(b.latitude,b.longitude,startLL[0],startLL[1]);
+      });
+    } else if(day===days&&endLL){
+      dayPool=dayPool.sort(function(a,b){
+        return dist(a.latitude,a.longitude,endLL[0],endLL[1])-dist(b.latitude,b.longitude,endLL[0],endLL[1]);
+      });
+    }
+    for(var i=0;i<dayPool.length&&dayStops<stopsPerDay;i++){
+      var p=dayPool[i];
+      if(used.has(p.name))continue;
+      used.add(p.name);
+      stops.push({day:day,item_name:p.name,category:p.category,location:p.location,lat:p.latitude,lng:p.longitude,hours:2,reason:'Recommended '+CL[p.category]+' in '+p.location,image_url:p.image_url});
+      dayStops++;
+    }
+  }
+  return stops;
+}
+
+function dist(la1,ln1,la2,ln2){var R=6371,dLat=(la2-la1)*Math.PI/180,dLng=(ln2-ln1)*Math.PI/180;var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+
+// Render
+var planMap=null,planLayers=[];
+function renderResults(title,startName,endName,days,stops){
+  document.getElementById('resTitle').textContent=title;
+  document.getElementById('resSub').textContent=startName+' → '+endName+' · '+days+' day'+(days>1?'s':'')+' · '+stops.length+' stops';
+
+  // List
+  var html='',curDay=0,stopNum=0;
+  stops.forEach(function(s){
+    if(s.day!==curDay){
+      curDay=s.day;
+      var dayLabel='Day '+curDay;
+      if(curDay===1)dayLabel+=' — Starting in '+startName;
+      if(curDay===days)dayLabel+=' — Ending in '+endName;
+      html+='<div class="day-hdr"><span>'+dayLabel+'</span></div>';
+    }
+    var color=CC[s.category]||'#7c6dfa';
+    var idx=stops.indexOf(s);
+    html+='<div class="stop-item" id="si-'+idx+'" onclick="flyTo('+s.lat+','+s.lng+','+idx+')">'
+      +'<div class="stop-num" style="background:'+color+'">'+(idx+1)+'</div>'
+      +'<div class="stop-info">'
+      +'<div class="stop-name">'+s.item_name+'</div>'
+      +'<div class="stop-meta"><span><i class="fa-solid fa-location-dot" style="font-size:9px"></i>'+s.location+'</span><span>'+s.hours+'h</span></div>'
+      +'<div class="stop-badge" style="background:'+color+'22;color:'+color+'">'+CE[s.category]+' '+CL[s.category]+'</div>'
+      +(s.reason?'<div class="stop-reason">'+s.reason.substring(0,70)+(s.reason.length>70?'…':'')+'</div>':'')
+      +'</div>'
+      +'<button class="stop-rm" onclick="rmStop(event,'+idx+')" title="Remove"><i class="fa-solid fa-xmark"></i></button>'
+      +'</div>';
+  });
+  document.getElementById('itinList').innerHTML=html;
+
+  // Map
+  setTimeout(function(){
+    if(!planMap){
+      planMap=L.map('plan-map').setView([-20.2,57.5],10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(planMap);
+    }
+    planLayers.forEach(function(l){planMap.removeLayer(l);});planLayers=[];
+    planMap.invalidateSize();
+
+    var bounds=[],lls=[];
+    var startName2=document.getElementById('f-start').value;
+    var endName2=document.getElementById('f-end').value;
+    var startLL2=startTown?[startTown.lat,startTown.lng]:null;
+    var endLL2=endTown?[endTown.lat,endTown.lng]:null;
+
+    // Start marker (green)
+    if(startLL2){
+      var sm=L.circleMarker(startLL2,{radius:12,fillColor:'#22c55e',color:'white',weight:2.5,fillOpacity:1}).addTo(planMap).bindPopup('<strong style="color:#0f172a">🟢 Start: '+startName2+'</strong>');
+      var sl=L.divIcon({className:'',html:'<div style="background:#22c55e;color:white;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)">Start</div>',iconAnchor:[20,-8]});
+      var slm=L.marker(startLL2,{icon:sl}).addTo(planMap);
+      planLayers.push(sm,slm);
+      bounds.push(startLL2);lls.push(startLL2);
+    }
+
+    // Stop markers
+    stops.forEach(function(s,i){
+      if(!s.lat||!s.lng)return;
+      var color=CC[s.category]||'#7c6dfa';
+      var glow=L.circleMarker([s.lat,s.lng],{radius:15,fillColor:color,color:color,weight:0,fillOpacity:.15}).addTo(planMap);
+      var mk=L.circleMarker([s.lat,s.lng],{radius:10,fillColor:color,color:'white',weight:2.5,fillOpacity:1}).addTo(planMap)
+        .bindPopup('<div style="min-width:160px"><div style="font-size:12px;font-weight:700;color:#0f172a">Stop '+(i+1)+': '+s.item_name+'</div><div style="font-size:11px;color:#64748b">'+s.location+' · Day '+s.day+'</div><div style="font-size:11px;color:'+color+';font-weight:600;margin-top:2px">'+CE[s.category]+' '+CL[s.category]+' · '+s.hours+'h</div>'+(s.reason?'<div style="font-size:10px;color:#94a3b8;margin-top:4px">'+s.reason.substring(0,80)+'</div>':'')+'</div>');
+      var lbl=L.divIcon({className:'',html:'<div style="background:'+color+';color:#000;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35)">'+(i+1)+'</div>',iconSize:[18,18],iconAnchor:[9,9]});
+      var lm=L.marker([s.lat,s.lng],{icon:lbl,zIndexOffset:100}).addTo(planMap);
+      planLayers.push(glow,mk,lm);
+      lls.push([s.lat,s.lng]);bounds.push([s.lat,s.lng]);
+    });
+
+    // End marker (red)
+    if(endLL2){
+      var em=L.circleMarker(endLL2,{radius:12,fillColor:'#ef4444',color:'white',weight:2.5,fillOpacity:1}).addTo(planMap).bindPopup('<strong style="color:#0f172a">🔴 End: '+endName2+'</strong>');
+      var el=L.divIcon({className:'',html:'<div style="background:#ef4444;color:white;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)">End</div>',iconAnchor:[16,-8]});
+      var elm=L.marker(endLL2,{icon:el}).addTo(planMap);
+      planLayers.push(em,elm);
+      lls.push(endLL2);bounds.push(endLL2);
+    }
+
+    // Route polyline Start → stops → End
+    if(lls.length>1){
+      var rl=L.polyline(lls,{color:'#7c6dfa',weight:3,opacity:.8,lineJoin:'round',dashArray:'1 0'}).addTo(planMap);
+      planLayers.push(rl);
+    }
+
+    if(bounds.length>0)planMap.fitBounds(bounds,{padding:[40,40]});
+
+    // Legend
+    var cats=[...new Set(stops.map(function(s){return s.category;}))];
+    var legH='<div class="ml-r"><div class="ml-d" style="background:#22c55e"></div>Start</div>'
+      +'<div class="ml-r"><div class="ml-d" style="background:#ef4444"></div>End</div>'
+      +cats.map(function(c){return'<div class="ml-r"><div class="ml-d" style="background:'+CC[c]+'"></div>'+CE[c]+' '+CL[c]+'</div>';}).join('');
+    document.getElementById('mapLeg').innerHTML=legH;
+  },250);
+}
+
+function flyTo(lat,lng,idx){
+  if(planMap)planMap.flyTo([lat,lng],14,{duration:1});
+  document.querySelectorAll('.stop-item').forEach(function(d){d.classList.remove('hl');});
+  var el=document.getElementById('si-'+idx);if(el){el.classList.add('hl');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+}
+
+function rmStop(e,idx){
+  e.stopPropagation();
+  genStops.splice(idx,1);
+  var t=document.getElementById('resTitle').textContent;
+  var sub=document.getElementById('resSub').textContent.split('·');
+  var route=sub[0]?sub[0].split('→'):[['','']];
+  renderResults(t,(route[0]||'').trim(),(route[1]||'').trim(),getDays(),genStops);
+}
+
+async function saveTrip(){
+  var title=document.getElementById('f-title').value.trim()||'My Trip';
+  var startName=startTown?startTown.n:document.getElementById('f-start').value.trim();
+  var endName=endTown?endTown.n:document.getElementById('f-end').value.trim();
+  var sd=document.getElementById('f-sd').value||null;
+  var ed=document.getElementById('f-ed').value||null;
+  var notes=document.getElementById('f-group').value+' · '+document.getElementById('f-budget').value+' budget';
+  var btn=document.getElementById('saveBtn');
+  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  try{
+    var r=await fetch('/api/itinerary/',{method:'POST',headers:ah(),body:JSON.stringify({name:title,start_point:startName,end_point:endName,start_date:sd,end_date:ed,notes:notes,stops:[]})});
+    if(!r.ok){var er=await r.json();alert('Error: '+JSON.stringify(er));btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Save This Trip';return;}
+    var trip=await r.json();
+    for(var i=0;i<genStops.length;i++){
+      var s=genStops[i];
+      await fetch('/api/itinerary/'+trip.id+'/add-stop/',{method:'POST',headers:ah(),body:JSON.stringify({item_name:s.item_name,category:s.category,location:s.location,item_id:0,duration_hours:s.hours,notes:s.reason||''})});
+    }
+    showPhase('saved');
+  }catch(e){alert('Save failed: '+e.message);btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Save This Trip';}
+}
+
+function resetForm(){
+  genStops=[];startTown=null;endTown=null;
+  document.getElementById('f-title').value='';
+  document.getElementById('f-start').value='';
+  document.getElementById('f-end').value='';
+  document.getElementById('f-sd').value='';
+  document.getElementById('f-ed').value='';
+  document.getElementById('genBtn').disabled=false;
+  showPhase('empty');
+}
+</script>
+</body>
+</html>
